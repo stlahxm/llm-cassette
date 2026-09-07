@@ -6,11 +6,19 @@
 
 ![llm-cassette](docs/hero.png)
 
-A PR quietly changed the system prompt. Nothing crashed, nothing looked wrong
-in review, and the change shipped. `llm-cassette` is a JUnit5 extension that
-catches exactly that: it records real LangChain4j `ChatModel` calls once,
-replays them without an API key from then on, and fails the moment the
-outgoing request stops matching what was recorded.
+Shipping AI features fast with an agent like Claude Code or Cursor means
+prompts get edited constantly, often buried inside a larger diff nobody
+reads line-by-line. `llm-cassette` is a JUnit5 extension that catches
+exactly that: it records real LangChain4j `ChatModel` calls once, replays
+them without an API key from then on, and **fails your existing CI
+pipeline** the moment the outgoing request stops matching what was
+recorded — the same `mvn test` / `gradle test` step you already run,
+no new pipeline to wire up.
+
+Verified end-to-end against a real, separate consumer project (not just
+this repo's own test suite): both Maven (Surefire) and Gradle correctly
+report a non-zero exit code and preserve the full diff in their test
+reports when a recorded interaction drifts.
 
 ![llm-cassette demo: first run records a real call and passes, a later run with a changed prompt fails with a unified diff](docs/demo.gif)
 
@@ -31,6 +39,32 @@ void summarizesCorrectly() {
 First run: hits your real model once, writes `src/test/resources/cassettes/<TestClass>/<testMethod>.json`.
 Every run after: replays from that file — fast, free, deterministic — and
 throws a diff like the one above if the request has drifted.
+
+## Works in your existing CI, no new pipeline
+
+Add it as a normal test dependency — GitHub Actions, Jenkins, whatever
+already runs your test step picks this up automatically:
+
+**Maven**
+
+```xml
+<dependency>
+    <groupId>dev.llmcassette</groupId>
+    <artifactId>llm-cassette</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+</dependency>
+```
+
+**Gradle**
+
+```groovy
+testImplementation 'dev.llmcassette:llm-cassette:0.1.0-SNAPSHOT'
+testRuntimeOnly 'org.junit.platform:junit-platform-launcher' // Gradle needs this explicitly
+```
+
+That second Gradle line isn't an llm-cassette quirk — recent Gradle
+versions need `junit-platform-launcher` on the test runtime classpath
+explicitly, or `gradle test` fails before it even reaches your tests.
 
 ## What you get
 
