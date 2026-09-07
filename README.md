@@ -42,6 +42,8 @@ throws a diff like the one above if the request has drifted.
 
 ## Works in your existing CI, no new pipeline
 
+![Works no matter which agent wrote the prompt (Claude Code, Cursor, GitHub Copilot, Codex, Windsurf, any agent) — caught by whatever already runs your tests (Maven, Gradle, JUnit 5, GitHub Actions, Jenkins, IntelliJ)](docs/works-with.png)
+
 Add it as a normal test dependency — GitHub Actions, Jenkins, whatever
 already runs your test step picks this up automatically:
 
