@@ -10,19 +10,7 @@ catches exactly that: it records real LangChain4j `ChatModel` calls once,
 replays them without an API key from then on, and fails the moment the
 outgoing request stops matching what was recorded.
 
-```
-The outgoing chat request no longer matches what's recorded in variableCalls.json.
-If this change is intentional, re-run with -Dcassette.update=true to re-record.
-
---- recorded (variableCalls.json)
-+++ actual (this run)
-@@ -1,4 +1,4 @@
- model: null
- temperature: null
--SYSTEM: You are a calculator.
-+SYSTEM: You are a precise calculator. Always show your work.
- USER: What is 6 times 7?
-```
+![llm-cassette demo: first run records a real call and passes, a later run with a changed prompt fails with a unified diff](docs/demo.gif)
 
 ## 30 seconds to your first caught regression
 
