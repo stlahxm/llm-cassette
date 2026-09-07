@@ -30,6 +30,21 @@ extension points, not gaps in the basics.
   plugin that lists which cassette files are stale (recorded against an old
   request shape) before you decide to re-record could be a nice DX layer
   on top of the current mechanism.
+- **A Spring AI port.** Everything here targets LangChain4j's `ChatModel`
+  (`dev.langchain4j.model.chat.ChatModel`, hook: `doChat(ChatRequest)`).
+  Spring AI has its own, unrelated `ChatModel` interface
+  (`org.springframework.ai.chat.model.ChatModel`, hook:
+  `ChatResponse call(Prompt prompt)`). The record/replay/diff logic in
+  `CassetteChatModel` doesn't depend on LangChain4j specifics beyond that
+  one hook — a `SpringAiCassetteChatModel` implementing the same idea
+  against Spring AI's interface would open this up to the other half of
+  the Java RAG ecosystem, the same way lc4j-lens (a sibling project) has a
+  planned Spring AI `VectorStore` adapter.
+
+## Non-goals
+
+- Recording/replaying non-chat model calls (embeddings, image generation,
+  moderation). This library is scoped to `ChatModel` testing specifically.
 
 ## Reporting a bug
 
