@@ -4,6 +4,8 @@
 [![Java 17+](https://img.shields.io/badge/Java-17%2B-58a6ff.svg)](pom.xml)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-d2a8ff.svg)](CONTRIBUTING.md)
 
+![llm-cassette](docs/hero.png)
+
 A PR quietly changed the system prompt. Nothing crashed, nothing looked wrong
 in review, and the change shipped. `llm-cassette` is a JUnit5 extension that
 catches exactly that: it records real LangChain4j `ChatModel` calls once,
@@ -52,6 +54,8 @@ throws a diff like the one above if the request has drifted.
   - `-Dcassette.disabled=true` always calls the real model, bypassing
     cassettes entirely — for the occasional nightly integration run.
 - **Zero server, zero DB.** Cassettes are plain JSON files next to your tests.
+
+![Without llm-cassette: $0.02/run, ~800ms, non-deterministic. After first recording: $0.00, ~5ms, deterministic](docs/feature-cost.png)
 
 ## How it works
 
