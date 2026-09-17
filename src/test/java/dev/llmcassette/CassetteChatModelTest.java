@@ -1,18 +1,23 @@
 package dev.llmcassette;
 
-import dev.langchain4j.data.message.UserMessage;
-import dev.langchain4j.model.chat.ChatModel;
-import dev.langchain4j.model.chat.request.ChatRequest;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+
 import org.junit.jupiter.api.AfterEach;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.opentest4j.AssertionFailedError;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-
-import static org.junit.jupiter.api.Assertions.*;
+import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.chat.request.ChatRequest;
 
 class CassetteChatModelTest {
 
@@ -71,11 +76,11 @@ class CassetteChatModelTest {
 
         CassetteChatModel replaying = CassetteChatModel.forTest(fake, cassetteFile);
         AssertionFailedError error = assertThrows(AssertionFailedError.class,
-            () -> replaying.chat("a completely different question"));
+                () -> replaying.chat("a completely different question"));
 
         assertTrue(error.getMessage().contains("cassette.update=true"));
         assertTrue(error.isExpectedDefined() && error.isActualDefined(),
-            "expected/actual must be set so IDEs can render a diff view");
+                "expected/actual must be set so IDEs can render a diff view");
     }
 
     @Test
@@ -131,28 +136,93 @@ class CassetteChatModelTest {
 
     @Test
     void temperatureChangeAloneCountsAsDrift() {
-        ChatModel fake = new ChatModel() {
-            @Override
-            public dev.langchain4j.model.chat.response.ChatResponse doChat(ChatRequest chatRequest) {
-                return dev.langchain4j.model.chat.response.ChatResponse.builder()
-                    .aiMessage(dev.langchain4j.data.message.AiMessage.from("ok"))
-                    .metadata(dev.langchain4j.model.chat.response.ChatResponseMetadata.builder().build())
-                    .build();
-            }
-        };
+        ChatModel fake = fakeChatModel();
 
         ChatRequest lowTemp = ChatRequest.builder()
-            .messages(UserMessage.from("hello"))
-            .temperature(0.0)
-            .build();
+                .messages(UserMessage.from("hello"))
+                .temperature(0.0)
+                .build();
         ChatRequest highTemp = ChatRequest.builder()
-            .messages(UserMessage.from("hello"))
-            .temperature(0.9)
-            .build();
+                .messages(UserMessage.from("hello"))
+                .temperature(0.9)
+                .build();
 
         CassetteChatModel.forTest(fake, cassetteFile).chat(lowTemp);
 
         CassetteChatModel replaying = CassetteChatModel.forTest(fake, cassetteFile);
         assertThrows(AssertionFailedError.class, () -> replaying.chat(highTemp));
+    }
+
+    @Test
+    void topPChangeAloneCountsAsDrift() {
+        ChatModel fake = fakeChatModel();
+
+        ChatRequest lowTopP = ChatRequest.builder()
+                .messages(UserMessage.from("hello"))
+                .topP(0.5)
+                .build();
+
+        ChatRequest highTopP = ChatRequest.builder()
+                .messages(UserMessage.from("hello"))
+                .topP(0.9)
+                .build();
+
+        CassetteChatModel.forTest(fake, cassetteFile).chat(lowTopP);
+
+        CassetteChatModel replaying = CassetteChatModel.forTest(fake, cassetteFile);
+        assertThrows(AssertionFailedError.class, () -> replaying.chat(highTopP));
+    }
+
+    @Test
+    void maxOutputTokensChangeAloneCountsAsDrift() {
+        ChatModel fake = fakeChatModel();
+
+        ChatRequest lowMaxTokens = ChatRequest.builder()
+                .messages(UserMessage.from("hello"))
+                .maxOutputTokens(100)
+                .build();
+
+        ChatRequest highMaxTokens = ChatRequest.builder()
+                .messages(UserMessage.from("hello"))
+                .maxOutputTokens(200)
+                .build();
+
+        CassetteChatModel.forTest(fake, cassetteFile).chat(lowMaxTokens);
+
+        CassetteChatModel replaying = CassetteChatModel.forTest(fake, cassetteFile);
+        assertThrows(AssertionFailedError.class, () -> replaying.chat(highMaxTokens));
+    }
+
+    @Test
+    void stopSequencesChangeAloneCountsAsDrift() {
+        ChatModel fake = fakeChatModel();
+
+        ChatRequest firstRequest;
+        firstRequest = ChatRequest.builder()
+                .messages(UserMessage.from("hello"))
+                .stopSequences(List.of("END"))
+                .build();
+
+        ChatRequest secondRequest = ChatRequest.builder()
+                .messages(UserMessage.from("hello"))
+                .stopSequences(List.of("STOP"))
+                .build();
+
+        CassetteChatModel.forTest(fake, cassetteFile).chat(firstRequest);
+
+        CassetteChatModel replaying = CassetteChatModel.forTest(fake, cassetteFile);
+        assertThrows(AssertionFailedError.class, () -> replaying.chat(secondRequest));
+    }
+
+    private ChatModel fakeChatModel() {
+        return new ChatModel() {
+            @Override
+            public dev.langchain4j.model.chat.response.ChatResponse doChat(ChatRequest chatRequest) {
+                return dev.langchain4j.model.chat.response.ChatResponse.builder()
+                        .aiMessage(dev.langchain4j.data.message.AiMessage.from("ok"))
+                        .metadata(dev.langchain4j.model.chat.response.ChatResponseMetadata.builder().build())
+                        .build();
+            }
+        };
     }
 }
